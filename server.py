@@ -50,7 +50,13 @@ def ensure_server():
     env['CUDA_CACHE_PATH'] = str(folder / 'cuda-cache')
     env['XDG_CACHE_HOME'] = str(folder / 'cache')
     args = [str(EXE), '-m', str(MODEL), '--host', '127.0.0.1', '--port', '8102',
-        '--alias', 'vampire-lucywest', '-c', '8192', '-np', '1', '-ngl', '99', '--reasoning', 'auto']
+        '--alias', 'vampire-lucywest', '-c', '8192', '-np', '1', '-ngl', '99', '--reasoning', 'auto',
+        '--no-mmap']
+    # --no-mmap (2026-11-05, real RAM-pressure finding -- see PrivateLucyWEST's same fix /
+    # BRICKCLUSTER_RAM_BLOWOUT_REPAIR_20261105.md for the measured numbers): default llama.cpp
+    # mmaps the whole GGUF and keeps it resident even after copying every tensor to the GPU
+    # (-ngl 99 here). Measured elsewhere: ~10.8GB real RSS with mmap vs ~1.5GB with --no-mmap,
+    # identical GPU usage either way.
     with log.open('xb') as f:
         proc = subprocess.Popen(args, cwd=ROOT, env=env, stdout=f, stderr=f,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
